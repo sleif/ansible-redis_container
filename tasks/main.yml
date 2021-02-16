@@ -1,0 +1,16 @@
+---
+
+- name: Start Redis container
+  docker_container:
+    name: "{{ REDIS_CONTAINER_NAME }}"
+    image: redis
+    state: started
+    restart_policy: always
+    recreate: yes
+    pull: yes
+    networks:
+      - name: "{{ DOCKER_NETWORK_NAME }}"
+        aliases:
+          - redis-container
+          - "{{ REDIS_CONTAINER_NAME }}"
+    networks_cli_compatible: yes

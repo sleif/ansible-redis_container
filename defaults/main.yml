@@ -1,0 +1,4 @@
+---
+
+REDIS_CONTAINER_NAME: redis
+DOCKER_NETWORK_NAME: custom-bridge
