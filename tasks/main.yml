@@ -1,23 +1,23 @@
 ---
 
-- name: "gather info about the pod"
-  containers.podman.podman_pod_info:
-    name: "{{ POD_NAME }}"
-  register: _pod_info
-  when:
-    - POD_NAME is defined
-    - POD_NAME | length > 0
-# - ansible.builtin.debug: var=_pod_info
+# - name: "gather info about the pod"
+#   containers.podman.podman_pod_info:
+#     name: "{{ POD_NAME }}"
+#   register: _pod_info
+#   when:
+#     - POD_NAME is defined
+#     - POD_NAME | length > 0
+# # - ansible.builtin.debug: var=_pod_info
 
-- name: "create the pod"
-  containers.podman.podman_pod:
-    name: "{{ POD_NAME }}"
-    publish: "{{ POD_PUBLISHED_PORTS | default(omit) }}"
-  register: _pod_info
-  when:
-    - POD_NAME is defined
-    - POD_NAME | length > 0
-    - _pod_info.pods | length == 0
+# - name: "create the pod"
+#   containers.podman.podman_pod:
+#     name: "{{ POD_NAME }}"
+#     publish: "{{ POD_PUBLISHED_PORTS | default(omit) }}"
+#   register: _pod_info
+#   when:
+#     - POD_NAME is defined
+#     - POD_NAME | length > 0
+#     - _pod_info.pods | length == 0
 
 - name: "start Redis container"
   containers.podman.podman_container:
@@ -28,6 +28,8 @@
     state: started
     restart_policy: always
     recreate: true
+    ports:
+      - "6379:6379"
     generate_systemd:
       path: /etc/systemd/system/
       restart_policy: always
