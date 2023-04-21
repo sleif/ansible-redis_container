@@ -1,6 +1,6 @@
 ---
 
-- name: Redis_container | gather info about the pod
+- name: "gather info about the pod"
   containers.podman.podman_pod_info:
     name: "{{ POD_NAME }}"
   register: _pod_info
@@ -9,7 +9,7 @@
     - POD_NAME | length > 0
 # - ansible.builtin.debug: var=_pod_info
 
-- name: Redis_container | create the pod
+- name: "create the pod"
   containers.podman.podman_pod:
     name: "{{ POD_NAME }}"
     publish: "{{ POD_PUBLISHED_PORTS | default(omit) }}"
@@ -19,15 +19,27 @@
     - POD_NAME | length > 0
     - _pod_info.pods | length == 0
 
-- name: Redis_container | start Redis container
+- name: "start Redis container"
   containers.podman.podman_container:
     name: "{{ redis_container_name }}"
-    image: docker.io:redis:latest
+    image: docker.io/redis:latest
     # hostname: "{{ redis_container_name }}"
-    pod: "{{ POD_NAME | default(omit) }}"
+    # pod: "{{ POD_NAME | default(omit) }}"
     state: started
     restart_policy: always
     recreate: true
+    generate_systemd:
+      path: /etc/systemd/system/
+      restart_policy: always
+  register: _podstart
+# - debug: var=_podstart
+
+- name: "enable systemd service"
+  ansible.builtin.service:
+    name: "{{ (_podstart.podman_systemd | dict2items | list | first).key }}"
+    enabled: true
+
+
     # pull: yes
     # networks:
     #   - name: "{{ DOCKER_NETWORK_NAME }}"
