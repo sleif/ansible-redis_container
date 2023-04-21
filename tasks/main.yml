@@ -1,0 +1,52 @@
+---
+
+- name: Redis_container | gather info about the pod
+  containers.podman.podman_pod_info:
+    name: "{{ POD_NAME }}"
+  register: _pod_info
+  when:
+    - POD_NAME is defined
+    - POD_NAME | length > 0
+# - ansible.builtin.debug: var=_pod_info
+
+- name: Redis_container | create the pod
+  containers.podman.podman_pod:
+    name: "{{ POD_NAME }}"
+    publish: "{{ POD_PUBLISHED_PORTS | default(omit) }}"
+  register: _pod_info
+  when:
+    - POD_NAME is defined
+    - POD_NAME | length > 0
+    - _pod_info.pods | length == 0
+
+- name: Redis_container | start Redis container
+  containers.podman.podman_container:
+    name: "{{ redis_container_name }}"
+    image: docker.io:redis:latest
+    # hostname: "{{ redis_container_name }}"
+    pod: "{{ POD_NAME | default(omit) }}"
+    state: started
+    restart_policy: always
+    recreate: true
+    # pull: yes
+    # networks:
+    #   - name: "{{ DOCKER_NETWORK_NAME }}"
+    #     aliases:
+    #       - redis-container
+    #       - "{{ redis_container_name }}"
+    # networks_cli_compatible: yes
+
+# - name: Start Redis container
+#   community.general.docker_container:
+#     name: "{{ redis_container_name }}"
+#     image: redis
+#     state: started
+#     restart_policy: always
+#     recreate: yes
+#     pull: yes
+#     networks:
+#       - name: "{{ DOCKER_NETWORK_NAME }}"
+#         aliases:
+#           - redis-container
+#           - "{{ redis_container_name }}"
+#     networks_cli_compatible: yes
