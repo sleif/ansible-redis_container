@@ -4,7 +4,7 @@ This role runs Redis in a Podman container.
 
 ## Requirements
 
-Use it on a machine setup with ansible role sleif.podman.
+na
 
 ## Role Variables
 
@@ -20,7 +20,7 @@ na
       user: root
       roles:
         - { role: sleif.redis_container, tags: "redis_container",
-                                      redis_container_name: "redis_for_cusom_service" }
+                                      redis_container_name: "redis_for_custom_service" }
 
 ## License
 
@@ -28,4 +28,4 @@ MIT
 
 ## Author Information
 
-Created in 2021 by Sebastian Berthold
+Created in 2023 by Sebastian Berthold

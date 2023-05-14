@@ -1,3 +1,4 @@
 ---
 
 redis_container_name: redis
+podman_network_name: podman
