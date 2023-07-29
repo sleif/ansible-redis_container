@@ -11,12 +11,21 @@
     #   - "6379:6379"
     network: "{{ podman_network_name }}"
     generate_systemd:
-      path: /etc/systemd/system/
+      # path: /etc/systemd/system/
+      path: "{{ container_storage_dir_base + '/' + podman_user + '/.config/systemd/user/'
+        if podman_rootless | default(true) | bool else '/etc/systemd/system/' }}"
       restart_policy: always
   register: _container_start_results
-# - debug: var=_container_start_results
+  become: "{{ podman_rootless | d(true) | bool }}"
+  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
+- debug: var=_container_start_results
 
 - name: Enable systemd service
-  ansible.builtin.service:
+  become: "{{ podman_rootless | d(true) | bool }}"
+  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/1001"
+  ansible.builtin.systemd:
     name: "{{ (_container_start_results.podman_systemd | dict2items | list | first).key }}"
     enabled: true
+    scope: "{{ 'user' if podman_rootless | d(true) | bool else 'system' }}"
