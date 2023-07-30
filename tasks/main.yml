@@ -1,6 +1,24 @@
 ---
 
+- name: Find uid of user
+  become: "{{ podman_rootless | d(true) | bool }}"
+  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
+  ansible.builtin.command: "id -u"
+  register: _container_run_as_uid
+  check_mode: false
+  changed_when: false
+
+- name: Set facts depending on podman_rootless
+  ansible.builtin.set_fact:
+    _xdg_runtime_dir: "/run/user/{{ _container_run_as_uid.stdout }}"
+    _systemd_scope: "{{ 'user' if podman_rootless | d(true) | bool else 'system' }}"
+    _systemd_service_files_dir: "{{ container_storage_dir_base + '/' + podman_user + '/.config/systemd/user/'
+        if podman_rootless | default(true) | bool else '/etc/systemd/system/' }}"
+  changed_when: false
+
 - name: Start Redis container
+  become: "{{ podman_rootless | d(true) | bool }}"
+  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
   containers.podman.podman_container:
     name: "{{ redis_container_name }}"
     image: docker.io/redis:latest
@@ -11,21 +29,19 @@
     #   - "6379:6379"
     network: "{{ podman_network_name }}"
     generate_systemd:
-      # path: /etc/systemd/system/
-      path: "{{ container_storage_dir_base + '/' + podman_user + '/.config/systemd/user/'
-        if podman_rootless | default(true) | bool else '/etc/systemd/system/' }}"
+      path: "{{ _systemd_service_files_dir }}"
       restart_policy: always
+    timezone: "local"
   register: _container_start_results
-  become: "{{ podman_rootless | d(true) | bool }}"
-  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
-- debug: var=_container_start_results
+
+# - debug: var=_container_start_results
 
 - name: Enable systemd service
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
   environment:
-    XDG_RUNTIME_DIR: "/run/user/1001"
+    XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
   ansible.builtin.systemd:
     name: "{{ (_container_start_results.podman_systemd | dict2items | list | first).key }}"
     enabled: true
-    scope: "{{ 'user' if podman_rootless | d(true) | bool else 'system' }}"
+    scope: "{{ _systemd_scope }}"
