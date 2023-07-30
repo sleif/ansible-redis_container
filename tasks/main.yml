@@ -10,10 +10,12 @@
 
 - name: Set facts depending on podman_rootless
   ansible.builtin.set_fact:
-    _xdg_runtime_dir: "/run/user/{{ _container_run_as_uid.stdout }}"
+    _container_storage_dir_base: "{{ container_storage_dir_base + '/' + podman_user + '/.config/systemd/user/'
+        if podman_rootless | default(true) | bool else container_storage_dir_base }}"
     _systemd_scope: "{{ 'user' if podman_rootless | d(true) | bool else 'system' }}"
     _systemd_service_files_dir: "{{ container_storage_dir_base + '/' + podman_user + '/.config/systemd/user/'
         if podman_rootless | default(true) | bool else '/etc/systemd/system/' }}"
+    _xdg_runtime_dir: "/run/user/{{ _container_run_as_uid.stdout }}"
   changed_when: false
 
 - name: Start Redis container
