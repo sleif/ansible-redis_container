@@ -6,29 +6,37 @@
       files: sleif.podman/tasks/includes/podman_init_vars.yml
       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
-- name: Include role sleif.podman podman_operation pod_create
+- name: Include role sleif.podman podman_operation podman_pod_create
   ansible.builtin.include_role:
     name: sleif.podman
     apply:
       tags:
         - podman_pod_create
   vars:
-    podman_operation: pod_create
+    podman_operation: podman_pod_create
   tags: always
+
+- name: Pull container image {{ redis_container_image }}
+  become: "{{ podman_rootless | bool }}"
+  become_user: "{{ podman_user if podman_rootless | bool else omit }}"
+  containers.podman.podman_image:
+    name: "{{ redis_container_image }}"
+    tag: "{{ redis_container_image_tag }}"
+    # force: true
 
 - name: Create Redis container
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
   containers.podman.podman_container:
     name: "{{ container_name }}"
-    image: docker.io/redis:latest
+    image: "{{ redis_container_image }}:{{ redis_container_image_tag }}"
     state: created
     pod: "{{ pod_name | default(omit) }}"
     restart_policy: always
     recreate: "{{ podman_container_recreate | d(false) }}"
     # publish:
     #   - "6379:6379"
-    network: "{{ podman_network_name }}"
+    network: "{{ podman_network_name if pod_name | d('') is falsy else [] }}"
     timezone: "local"
   register: _container_create_results
 
@@ -42,5 +50,5 @@
         - podman_generate_systemd
   vars:
     podman_operation: podman_generate_systemd
-    target: "{{ pod_name if pod_name is defined and pod_name | length > 0 else container_name }}"
+    target: "{{ pod_name if pod_name | d('') is truthy else container_name }}"
   tags: always

@@ -2,3 +2,5 @@
 
 redis_container_name: redis
 podman_network_name: podman
+redis_container_image: "docker.io/redis"
+redis_container_image_tag: 'latest'
