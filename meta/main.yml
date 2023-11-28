@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: redis_container
   author: Sebastian Berthold
-  description: Start a Redis Docker container
+  description: Start a Redis container
   # company: your company (optional)
 
   # If the issue tracker for your role is not on github, uncomment the
