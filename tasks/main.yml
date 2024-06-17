@@ -6,49 +6,26 @@
       files: sleif.podman/tasks/includes/podman_init_vars.yml
       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
-- name: Include role sleif.podman podman_operation podman_pod_create
+- name: include_role sleif.podman podman_operation podman_create_container for redis
   ansible.builtin.include_role:
     name: sleif.podman
     apply:
       tags:
-        - podman_pod_create
+        - podman_container_create
   vars:
-    podman_operation: podman_pod_create
-  tags: always
-
-- name: Pull container image {{ redis_container_image }}
-  become: "{{ podman_rootless | bool }}"
-  become_user: "{{ podman_user if podman_rootless | bool else omit }}"
-  containers.podman.podman_image:
-    name: "{{ redis_container_image }}"
-    tag: "{{ redis_container_image_tag }}"
-    # force: true
-
-- name: Create Redis container
-  become: "{{ podman_rootless | d(true) | bool }}"
-  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
-  containers.podman.podman_container:
-    name: "{{ container_name }}"
-    image: "{{ redis_container_image }}:{{ redis_container_image_tag }}"
-    state: created
-    pod: "{{ pod_name | default(omit) }}"
-    restart_policy: always
-    recreate: "{{ podman_container_recreate | d(false) }}"
-    # publish:
-    #   - "6379:6379"
-    network: "{{ podman_network_name if pod_name | d('') is falsy else [] }}"
-    timezone: "local"
-  register: _container_create_results
-
-# - debug: var=_container_create_results
-
-- name: Include role sleif.podman podman_operation podman_generate_systemd
-  ansible.builtin.include_role:
-    name: sleif.podman
-    apply:
-      tags:
-        - podman_generate_systemd
-  vars:
-    podman_operation: podman_generate_systemd
-    target: "{{ pod_name if pod_name | d('') is truthy else container_name }}"
-  tags: always
+    # podman_rootless: true
+    # podman_network_name: "{{ podman_networks.podman_network_rootless.podman_network_name if podman_rootless | bool else
+    #   podman_networks.podman_network_root.podman_network_name }}"
+    podman_operation: podman_container_create
+    container_name: '{{ redis_container_name }}'
+    target: "{{ pod_name if pod_name | d('') is truthy else redis_container_name }}"
+    _container:
+      name: '{{ container_name }}'
+      image:
+        name: "{{ redis_container_image }}"
+        tag: "{{ redis_container_image_tag }}"
+      network: "{{ podman_network_name if pod_name | d('') is falsy else [] }}"
+      pod: "{{ pod_name | default(omit) }}"
+      # publish: '{{ container_published_ports | default(["6379:6379"]) }}'
+      timezone: "Europe/Berlin"
+  tags: podman_container_create
